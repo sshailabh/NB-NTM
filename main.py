@@ -77,7 +77,6 @@ def doc_top_dist(net, data_list, corpus_word_count):
             _, _, lam, _ = net(batch)
             norm_lambda = lam.cpu().numpy()/lam.cpu().numpy().sum(axis=1)[:, np.newaxis]
             collect_doc_topic_dist.extend(norm_lambda.tolist())
-    print("check doc top", len(collect_doc_topic_dist), collect_doc_topic_dist[0])
     return collect_doc_topic_dist[:len(data_list)]
 
 def get_pyldavis_input(net, data_list, corpus_count, data_mat, vocab_file):
@@ -92,8 +91,6 @@ def get_pyldavis_input(net, data_list, corpus_count, data_mat, vocab_file):
             if not line:
                 break
             word_list.append(line.split()[0])
-    print("check input pyldavis", len(word_list), topic_term_dist.shape,len(doc_topic_distribution))
-    print("c1", data_mat.shape, len(data_list),doc_lengths.shape, term_frequency.shape)
     format = {'topic_term_dists': topic_term_dist,
                 'doc_topic_dists': doc_topic_distribution,
                 'doc_lengths': doc_lengths,
@@ -215,7 +212,7 @@ def main():
     pylda_vis_data = get_pyldavis_input(net, test_list, test_count, test_mat, 'data/' + data_name + '/' + data_name + '.vocab')
     visualize_topic_model = vis.prepare(**pylda_vis_data)
     vis.save_html(visualize_topic_model, 'gnbntm.html')
-
+    print("Visualization complete using pyLDAvis")
     # save topic words
     utils.print_topic_word('data/' + data_name + '/' + data_name + '.vocab', model + '_topic_words.txt', net.out_fc.weight.detach().cpu().t(), 10)
 
