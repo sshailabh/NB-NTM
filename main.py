@@ -11,13 +11,13 @@ import utils
 model = 'GNBNTM'
 shape_prior = 2
 scale_prior = 0.5
-topic_num = 20
-vocab_num = 2000  # 20news & reuters: 2000, MXM: 5000
+topic_num = 40
+vocab_num = 5892  # 20news & reuters: 2000, MXM: 5000
 hidden_num = 256
 batch_size = 64
 learning_rate = 5e-4
 top_word_num = 10  # print how many words for each topic
-data_name = '20news'
+data_name = '2015-20_Climate'
 epochs = 600  # 20news & reuters: 600 (approximate 1 hour), MXM: 100 (approximate 4 hours)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 torch.manual_seed(0)
@@ -143,7 +143,7 @@ def main():
                 torch.save(state, './checkpoint/' + model + '/' + flag_str + '_best_ppl')
 
             # coherence
-            coherence = evaluate_coherence(net, train_mat, [5])
+            coherence = evaluate_coherence(net, train_mat, [10])
             print('train coherence = ', coherence)
 
             if coherence > best_coherence:
@@ -170,10 +170,10 @@ def main():
     checkpoint = torch.load('./checkpoint/' + model + '/' + flag_str + '_best_coherence', map_location='cuda:0')
     net.load_state_dict(checkpoint['net'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    print('whole coherence = ', evaluate_coherence(net, np.concatenate((train_mat, test_mat)), [5, 10, 15]))
+    print('whole coherence = ', evaluate_coherence(net, np.concatenate((train_mat, test_mat)), [10]))
 
     # save topic words
-    utils.print_topic_word('data/' + data_name + '/' + data_name + '.vocab', model + '_topic_words.txt', net.out_fc.weight.detach().cpu().t(), 15)
+    utils.print_topic_word('data/' + data_name + '/' + data_name + '.vocab', model + '_topic_words.txt', net.out_fc.weight.detach().cpu().t(), 10)
 
 
 if __name__ == '__main__':
