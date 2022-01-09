@@ -6,10 +6,11 @@ import os
 import NBNTM
 import GNBNTM
 import utils
+import pyLDAvis as vis
 
 # hyper-parameter initialization
 model = 'GNBNTM'
-shape_prior = 2
+shape_prior = 0.5
 scale_prior = 0.5
 topic_num = 40
 vocab_num = 5892  # 20news & reuters: 2000, MXM: 5000
@@ -60,6 +61,45 @@ def run(net, optimizer, data_list, corpus_word_count, is_train):
 
     return perplexity, kld
 
+def doc_top_dist(net, data_list, corpus_word_count):
+    net.eval()
+    idx_batches = utils.create_batches(len(data_list), batch_size, shuffle=False)
+    collect_doc_topic_dist = []
+    with torch.no_grad():
+        for idx_batch in idx_batches:
+            # get batch data
+            batch, batch_word_count, mask = utils.fetch_batch_data(data_list, corpus_word_count,
+                                                               idx_batch, vocab_num)
+            batch = torch.tensor(batch, dtype=torch.float, device=device)
+            batch_word_count = torch.tensor(batch_word_count, dtype=torch.float, device=device)
+            mask = torch.tensor(mask, dtype=torch.float, device=device)
+            # forward propagation
+            _, _, lam, _ = net(batch)
+            norm_lambda = lam.cpu().numpy()/lam.cpu().numpy().sum(axis=1)[:, np.newaxis]
+            collect_doc_topic_dist.extend(norm_lambda.tolist())
+    print("check doc top", len(collect_doc_topic_dist), collect_doc_topic_dist[0])
+    return collect_doc_topic_dist[:len(data_list)]
+
+def get_pyldavis_input(net, data_list, corpus_count, data_mat, vocab_file):
+    topic_term_dist = torch.softmax(net.out_fc.weight.detach().t(), dim=1).cpu().numpy()
+    doc_topic_distribution = doc_top_dist(net, data_list, corpus_count) #list
+    doc_lengths = data_mat.sum(axis=1)
+    term_frequency = data_mat.sum(axis=0)
+    word_list = []
+    with open(vocab_file) as fin:
+        while True:
+            line = fin.readline()
+            if not line:
+                break
+            word_list.append(line.split()[0])
+    print("check input pyldavis", len(word_list), topic_term_dist.shape,len(doc_topic_distribution))
+    print("c1", data_mat.shape, len(data_list),doc_lengths.shape, term_frequency.shape)
+    format = {'topic_term_dists': topic_term_dist,
+                'doc_topic_dists': doc_topic_distribution,
+                'doc_lengths': doc_lengths,
+                'vocab': word_list,
+                'term_frequency': term_frequency}
+    return format
 
 def evaluate_coherence(net, doc_word, n_list):
     topic_word = net.out_fc.weight.detach().t()
@@ -171,6 +211,10 @@ def main():
     net.load_state_dict(checkpoint['net'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     print('whole coherence = ', evaluate_coherence(net, np.concatenate((train_mat, test_mat)), [10]))
+    #visualization
+    pylda_vis_data = get_pyldavis_input(net, test_list, test_count, test_mat, 'data/' + data_name + '/' + data_name + '.vocab')
+    visualize_topic_model = vis.prepare(**pylda_vis_data)
+    vis.save_html(visualize_topic_model, 'gnbntm.html')
 
     # save topic words
     utils.print_topic_word('data/' + data_name + '/' + data_name + '.vocab', model + '_topic_words.txt', net.out_fc.weight.detach().cpu().t(), 10)
