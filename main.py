@@ -156,10 +156,10 @@ def main():
     end_time = time.time()
     print(f'time cost:{end_time - start_time - addition_time}')
 
-    record_result(result_dir + './train_ppl_time_record', train_ppl_time)
+    record_result(result_dir + '/train_ppl_time_record.txt', train_ppl_time)
 
     # test perplexity
-    checkpoint = torch.load('./checkpoint/' + model + '/' + flag_str + '_best_ppl', map_location='cuda:0')
+    checkpoint = torch.load('./checkpoint/' + model + '/' + flag_str + '_best_ppl', map_location=device)
     net.load_state_dict(checkpoint['net'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     epoch = checkpoint['epochs']
@@ -167,7 +167,7 @@ def main():
     print_result(epoch, 'test', perplexity, kld)
 
     # test coherence
-    checkpoint = torch.load('./checkpoint/' + model + '/' + flag_str + '_best_coherence', map_location='cuda:0')
+    checkpoint = torch.load('./checkpoint/' + model + '/' + flag_str + '_best_coherence', map_location=device)
     net.load_state_dict(checkpoint['net'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     print('whole coherence = ', evaluate_coherence(net, np.concatenate((train_mat, test_mat)), [10]))
