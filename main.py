@@ -138,7 +138,7 @@ def main():
     data_dir = 'data/' + data_name + '/'
     train_list, train_mat, train_count = utils.data_set(data_dir + 'train.feat', vocab_num)
     test_list, test_mat, test_count = utils.data_set(data_dir + 'test.feat', vocab_num)
-    
+    print("Start training with", device)
     # auxiliary dir setting
     if not os.path.exists('./result'):
         os.mkdir('./result')
